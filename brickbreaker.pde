@@ -1,3 +1,6 @@
+// Increments every frame
+var counter;
+
 // Number of lives
 var lives;
 
@@ -16,27 +19,43 @@ var gameStage;
 // Particle system array
 var particles;
 
+// Size in pixels of the frame where the ball can go
+var gameWidth = 400;
+var gameHeight = 400;
+
 void setup() {
-	size(400, 400);
+	size(400, 450);
+	counter = 0;
 	paddle = new Paddle();
 	bricks = [];
 	particles = [];
 	var numCols = 10;
 	var numRows = 3;
-	for (var i = 1; i < numCols; i++) {
-		var x = i * (width / numCols);
-		for (var j = 1; j < numRows + 1; j++) {
-			var y = j * (width / numCols);
-			bricks.push(new Brick(x, y));
+	for (var r = 0; r < numRows; r++) {
+		var y = (r + 1) * (gameWidth / numCols);
+		var rratio = r / (numRows + 1);
+		var colr = color(128 + rratio * 128, 128 - rratio * 128, rratio * 128);
+		for (var c = 0; c < numCols - 1; c++) {
+			var x = (c + 1) * (gameWidth / numCols);
+			bricks.push(new Brick(x, y, colr));
 		}
 	}
-	lives = 3;
+	// for (var i = 1; i < numCols; i++) {
+		// var x = i * (gameWidth / numCols);
+		// for (var j = 1; j < numRows + 1; j++) {
+			// var y = j * (gameWidth / numCols);
+			// bricks.push(new Brick(x, y));
+		// }
+	// }
+	lives = 4;
 	ball = new Ball();
 	gameStage = 0;
-	console.log("setup complete");
+	console.log("setup complete\u2764");
+	console.log(PFont.list());
 }
 
 void draw() {
+	counter++;
 	mover[gameStage]();
 	drawer[gameStage]();
 }
@@ -83,24 +102,47 @@ var mover = {
 var drawer = {
 	"0": function() {
 		background(128);
+		fill(255);
+		text("hello", width / 2, height / 2);
 	},
 	"1": function() {
-		background(128);
-		paddle.draw();
-		ball.draw();
-		for (var i = 0; i < bricks.length; i++) {
-			if (!bricks[i].isDead) {
-				bricks[i].draw();
-			}
-		}
-		for (var i = 0; i < particles.length; i++) {
-			particles[i].draw();
-		}
+		drawGame();
+		drawScore();
 	},
 	"2": function() {
 		
 	}
 };
+
+// Draws the paddle, ball, bricks, particles, etc.
+function drawGame() {
+	background(128);
+	paddle.draw();
+	ball.draw();
+	for (var i = 0; i < bricks.length; i++) {
+		if (!bricks[i].isDead) {
+			bricks[i].draw();
+		}
+	}
+	for (var i = 0; i < particles.length; i++) {
+		particles[i].draw();
+	}
+}
+
+// Draws the scoreboard that appears at the bottom
+function drawScore() {
+	fill(0);
+	rectMode(CORNER);
+	rect(0, gameHeight, width, height);
+	rectMode(CENTER);
+	fill(color(0, 255, 0));
+	
+	var lifeText = "extra balls: ";
+	for (var i = 0; i < lives - 1; i++) {
+		lifeText += "\u25cf";
+	}
+	text(lifeText, 10, gameHeight + 10);
+}
 
 // Object containing click methods for different stages of the game
 var clicker = {
@@ -108,7 +150,8 @@ var clicker = {
 		gameStage++;
 	},
 	"1": function() {
-		particles.push(new Particle(mouseX, mouseY, color(0, 0, 255)));
+		//particles.push(new Particle(mouseX, mouseY, color(0, 0, 255)));
+		
 	},
 	"2": function() {
 		
@@ -152,9 +195,19 @@ var keyUp = {
 	}
 };
 
+function gameOver() {
+	console.log("game over");
+	gameStage = -1;
+}
+
+function gameWin() {
+	console.log("game win");
+	gameStage = -2;
+}
+
 function Paddle() {
-	this.x = width / 2;
-	this.y = height - 2;
+	this.x = gameWidth / 2;
+	this.y = gameHeight - 2;
 	this.dx = 0;
 	this.speed = 3;
 	this.width = 40;
@@ -168,8 +221,8 @@ function Paddle() {
 		rect(this.x, this.y, this.width, this.height);
 	}
 	this.move = function() {
-		if (this.x + this.dx + (this.width / 2) >= width) {
-			this.x = width - (this.width / 2);
+		if (this.x + this.dx + (this.width / 2) >= gameWidth) {
+			this.x = gameWidth - (this.width / 2);
 		} else if (this.x + this.dx - (this.width / 2) <= 0) {
 			this.x = (this.width / 2);
 		} else {
@@ -186,17 +239,33 @@ function Paddle() {
 
 function Ball() {
 	this.radius = 7;
-	this.x = width / 2;
-	this.y = height / 2;
+	this.x = gameWidth / 2;
+	this.y = gameHeight / 2;
 	this.speed = 3;
 	this.v = new PVector(0, this.speed);
 	this.c = color(0, 0, 255);
 	this.move = function() {
-		if (this.x + this.v.x - this.radius < 0 || this.x + this.v.x + this.radius > width) {
+		if (this.x + this.v.x - this.radius < 0 || this.x + this.v.x + this.radius > gameWidth) {
 			this.v.x *= -1;
 		}
-		if (this.y + this.v.y - this.radius < 0 || this.y + this.v.y + this.radius > height) {
+		if (this.y + this.v.y - this.radius < 0) {
 			this.v.y *= -1;
+		}
+		if (this.y + this.v.y + this.radius > gameHeight) {
+			//ball went off screen down
+			lives -= 1;
+			for (var i = 0; i < 5; i++) {
+				particles.push(new Particle(this.x, this.y, color(255, 0, 0)));
+			}
+			if (lives <= 0) {
+				gameOver();
+			} else {
+				this.x = gameWidth / 2;
+				this.y = gameHeight / 2;
+				this.v.x = 0;
+				this.v.y = this.speed;
+				paddle.x = gameWidth / 2;
+			}
 		}
 		this.x += this.v.x;
 		this.y += this.v.y;
@@ -222,23 +291,24 @@ function Ball() {
 	}
 }
 
-function Brick(x, y) {
+function Brick(x, y, c) {
 	this.x = x;
 	this.y = y;
 	this.width = 30;
 	this.height = 10;
 	this.hwidth = this.width / 2;
 	this.hheight = this.height / 2;
-	this.c = color(255, 0, 0);
+	this.c = c;
 	this.isDead = false;
 	this.draw = function() {
+		//var c = color(128 + Math.sin(counter/10.0) * 128, 128 - Math.sin(counter/10.0) * 128, 0);
 		fill(this.c);
 		rectMode(CENTER);
 		rect(this.x, this.y, this.width, this.height);
 	}
 	this.die = function() {
 		this.isDead = true;
-		particles.push(new Particle(this.x, this.y, color(0, 255, 0)));
+		particles.push(new Particle(this.x, this.y, this.c));
 	}
 	this.bounce = function(inBall) {
 		this.die();
@@ -251,15 +321,12 @@ function Brick(x, y) {
 		if (!inVertical && !inHorizontal) {
 			//inBall.v.x *= -1;
 			inBall.v.y *= -1;
-			console.log("corner collision");
 		} else if (inVertical && !inHorizontal) {
 			inBall.v.x *= -1;
-			console.log("side collision");
 		} else if (!inVertical && inHorizontal) {
 			inBall.v.y *= -1;
-			console.log("top/bottom collision");
 		} else {
-			console.log("WATWATWAT");
+			
 		}
 		inBall.move();
 	}
@@ -306,10 +373,10 @@ function SubParticle(x, y, c, parent) {
 	this.parent = parent;
 	this.move = function() {
 		this.life -= 2;
-		if (this.x + this.dx + this.radius >= width || this.x + this.dx - this.radius <= 0) {
+		if (this.x + this.dx + this.radius >= gameWidth || this.x + this.dx - this.radius <= 0) {
 			this.dx *= -1;
 		}
-		if (this.y + this.dy + this.radius >= height || this.y + this.dy - this.radius <= 0) {
+		if (this.y + this.dy + this.radius >= gameHeight || this.y + this.dy - this.radius <= 0) {
 			this.dy *= -1;
 		}
 		this.x += this.dx;
