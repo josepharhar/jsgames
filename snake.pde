@@ -1,3 +1,4 @@
+//increments 60 times per second
 var counter;
 
 var gameStage;
