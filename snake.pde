@@ -1,26 +1,57 @@
 //increments 60 times per second
 var counter;
 
+// Integer representing the stage of the game
 var gameStage;
 
-var gameWidth;
+// Number of horizontal blocks in the grid
+var gridWidth;
+// Number of vertical blocks in the grid
+var gridHeight;
 
-var gameHeight;
-
+// Object that contains the snake pieces, food, etc
 var grid;
 
+// Current direction of the snake
 var dir;
+// Next direction of the snake determined by user input
+var nextDirection;
 
 // Snake's head
 var snake;
 
+// Reference to piece of food in the grid
+var food;
+
+// boolean to determine if should add another piece on the snake when it moves
+var addSnake;
+
+// Width and height in pixels of the drawing zone
+var gameWidth, gameHeight;
+// Width and height of each grid square
+var gridWidthpx, gridHeightpx;
+
+// Score that accumulates at the bottom
+var score;
+
+// Particle system array
+var particles;
+
+
 void setup() {
 	console.log("snake setup started");
-	size(400, 400);
+	size(400, 450);
+	gameWidth = 400;
+	gameHeight = 400;
 	counter = 0;
+	score = 0;
+	particles = [];
 	gameStage = 0;
-	gameWidth = 20;
-	gameHeight = 20;
+	gridWidth = 30;
+	gridHeight = 30;
+	gridWidthpx = gameWidth / gridWidth;
+	gridHeightpx = gameHeight / gridHeight;
+	addSnake = false;
 	grid.init();
 	snake = new Snake(9, 9);
 	grid.setLoc(9, 9, snake);
@@ -29,6 +60,8 @@ void setup() {
 	snake.nextSnake.nextSnake = new Snake(9, 7);
 	grid.setLoc(9, 7, snake.nextSnake.nextSnake);
 	dir = direction.DOWN;
+	food = new Food(15, 15);
+	grid.setLoc(food.x, food.y, food);
 	console.log("snake setup complete");
 }
 
@@ -42,6 +75,7 @@ void draw() {
 function Snake(x, y) {
 	this.x = x;
 	this.y = y;
+	this.c = color(0, 255, 0);
 	this.nextSnake = null;
 	this.prevSnake = null;
 	this.getLast = function() {
@@ -54,8 +88,36 @@ function Snake(x, y) {
 }
 
 function Food(x, y) {
+	this.c = color(255, 0, 0);
 	this.x = x;
 	this.y = y;
+	this.eat = function() {
+		//check to see if the user won the game, in which case there are no spots left
+		if (grid.isFull()) {
+			gameWin();
+		}
+		//place self in a new spot in the grid
+		var prevx = this.x;
+		var prevy = this.y;
+		//search for a new place to put the food
+		var newx;
+		var newy;
+		while (!newx) {
+			var randx = Math.floor(Math.random() * gridWidth);
+			var randy = Math.floor(Math.random() * gridHeight);
+			if (!grid.getLoc(randx, randy)) {
+				newx = randx;
+				newy = randy;
+			}
+		}
+		this.x = newx;
+		this.y = newy;
+		grid.setLoc(newx, newy, this);
+		grid.setLoc(prevx, prevy, null);
+		addSnake = true;
+		score += 50;
+		particles.push(new Particle(prevx * gridWidthpx + gridWidthpx / 2, prevy * gridHeightpx + gridHeightpx / 2, color(0, 255, 0)));
+	}
 }
 
 // Moves the snake
@@ -76,21 +138,19 @@ function moveSnake() {
 		nexty = snake.y;
 	}
 	// check for collision with walls
-	if (nextx > gameWidth - 1 || nextx < 0 || nexty > gameHeight - 1 || nexty < 0) {
+	if (nextx > gridWidth - 1 || nextx < 0 || nexty > gridHeight - 1 || nexty < 0) {
 		gameOver();
 	}
 	//check for collision with other objects
 	var nextObject = grid.getLoc(nextx, nexty);
-	var eatFood;
-	if (nextObject == null) {
+	if (nextObject == null /*|| nextObject == snake.getLast()*/) {
 		//good to go, do nothing
-		eatFood = false;
 	} else if (nextObject instanceof Snake) {
 		//ran into itself
 		gameOver();
 	} else if (nextObject instanceof Food) {
 		//eat the food
-		eatFood = true;
+		food.eat();
 	}
 	
 	//go through linkedlist snake and move each part
@@ -113,10 +173,22 @@ function moveSnake() {
 	currentSnake.y = nexty;
 	grid.setLoc(currentSnake.x, currentSnake.y, currentSnake);
 	grid.setLoc(prevx, prevy, null);
-	if (eatFood) {
+	if (addSnake) {
 		currentSnake.nextSnake = new Snake(prevx, prevy);
 		grid.setLoc(currentSnake.nextSnake.x, currentSnake.nextSnake.y, currentSnake.nextSnake);
+		addSnake = false;
 	}
+}
+
+// Draws the scoreboard that appears at the bottom
+function drawScore() {
+	fill(0);
+	rectMode(CORNER);
+	rect(0, gameHeight, width, height);
+	rectMode(CENTER);
+	fill(color(0, 255, 0));
+	
+	text("Score: " + score, 10, gameHeight + 10);
 }
 
 function gameOver() {
@@ -132,9 +204,9 @@ function gameWin() {
 var grid = {
 	"array": [],
 	"init": function() {
-		for (var i = 0; i < gameWidth; i++) {
+		for (var i = 0; i < gridWidth; i++) {
 			this.array.push([]);
-			for (var j = 0; j < gameHeight; j++) {
+			for (var j = 0; j < gridHeight; j++) {
 				this.array[i].push(null);
 			}
 		}
@@ -142,8 +214,18 @@ var grid = {
 	"getLoc": function(x, y) {
 		return this.array[x][y];
 	},
-	"settLoc": function(x, y, input) {
+	"setLoc": function(x, y, input) {
 		this.array[x][y] = input;
+	},
+	"isFull": function() {
+		for (var i = 0; i < gridWidth; i++) {
+			for (var j = 0; j < gridHeight; j++) {
+				if (!this.array[i][j]) {
+					return false;
+				}
+			}
+		}
+		return true;
 	}
 };
 
@@ -160,8 +242,16 @@ var mover = {
 	
 	},
 	"1": function() {
-		if (counter % 30 == 0) {
+		if (counter % 5 == 0) {
+			if (nextDirection)
+				dir = nextDirection;
 			moveSnake();
+		}
+		for (var i = particles.length - 1; i >= 0; i--) {
+			particles[i].move();
+			if (particles[i].isDead()) {
+				particles.splice(i, 1);
+			}
 		}
 	},
 	"2": function() {
@@ -175,10 +265,26 @@ var mover = {
 var drawer = {
 	"0": function() {
 		background(128);
+		fill(255);
+		text("click to play snake", width / 2, height / 2);
 	},
 	"1": function() {
 		background(128);
-		
+		//draw snake
+		fill(snake.c);
+		var nextSnake = snake;
+		while (nextSnake) {
+			rect(nextSnake.x * gridWidthpx, nextSnake.y * gridHeightpx, gridWidthpx, gridHeightpx);
+			nextSnake = nextSnake.nextSnake;
+		}
+		//draw food
+		fill(food.c);
+		rect(food.x * gridWidthpx, food.y * gridHeightpx, gridWidthpx, gridHeightpx);
+		drawScore();
+		//draw particles
+		for (var i = 0; i < particles.length; i++) {
+			particles[i].draw();
+		}
 	},
 	"2": function() {
 		
@@ -210,16 +316,80 @@ void mousePressed() {
 void keyPressed() {
 	switch (keyCode) {
 		case 37:
-			dir = direction.LEFT;
+			if (dir != direction.RIGHT)
+				nextDirection = direction.LEFT;
 			break;
 		case 38:
-			dir = direction.UP;
+			if (dir != direction.DOWN)
+				nextDirection = direction.UP;
 			break;
 		case 39:
-			dir = direction.RIGHT;
+			if (dir != direction.LEFT)
+				nextDirection = direction.RIGHT;
 			break;
 		case 40:
-			dir = direction.DOWN;
+			if (dir != direction.UP)
+				nextDirection = direction.DOWN;
 			break;
+	}
+}
+
+// Particle system object containing subparticles
+function Particle(x, y, c) {
+	this.x = x;
+	this.y = y;
+	this.c = c;
+	this.life = 255;
+	this.subParticles = [];
+	for (var i = 0; i < 20; i++) {
+		this.subParticles.push(new SubParticle(this.x, this.y, this.c, this));
+	}
+	this.isDead = function() {
+		if (this.life <= 0) {
+			return true;
+		}
+		return false;
+	}
+	this.move = function() {
+		this.life -= 2;
+		for (var i = 0; i < this.subParticles.length; i++) {
+			this.subParticles[i].move();
+		}
+	}
+	this.draw = function() {
+		noStroke();
+		for (var i = 0; i < this.subParticles.length; i++) {
+			this.subParticles[i].draw();
+		}
+		stroke(1);
+	}
+}
+
+function SubParticle(x, y, c, parent) {
+	this.x = x;
+	this.y = y;
+	this.dx = random(-7, 7);
+	this.dy = random(-7, 7);
+	this.radius = 3;
+	this.c = c;
+	this.parent = parent;
+	this.move = function() {
+		this.life -= 2;
+		if (this.x + this.dx + this.radius >= gameWidth || this.x + this.dx - this.radius <= 0) {
+			this.dx *= -1;
+		}
+		if (this.y + this.dy + this.radius >= gameHeight || this.y + this.dy - this.radius <= 0) {
+			this.dy *= -1;
+		}
+		this.x += this.dx;
+		this.y += this.dy;
+		this.dy *= .99;
+		this.dx *= .99;
+	}
+	this.draw = function() {
+		//noStroke();
+		fill(this.c, this.parent.life);
+		ellipse(this.x, this.y, this.radius * 2, this.radius * 2);
+		//stroke(1);
 	}
 }

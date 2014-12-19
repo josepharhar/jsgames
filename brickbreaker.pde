@@ -103,7 +103,7 @@ var drawer = {
 	"0": function() {
 		background(128);
 		fill(255);
-		text("hello", width / 2, height / 2);
+		text("click to play brick breaker", width / 2, height / 2);
 	},
 	"1": function() {
 		drawGame();
