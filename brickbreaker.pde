@@ -24,6 +24,7 @@ var gameWidth = 400;
 var gameHeight = 400;
 
 void setup() {
+	helloWorld();
 	size(400, 450);
 	counter = 0;
 	paddle = new Paddle();
