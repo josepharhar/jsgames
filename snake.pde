@@ -32,9 +32,6 @@ var gridWidthpx, gridHeightpx;
 // Score that accumulates at the bottom
 var score;
 
-// Particle system array
-var particles;
-
 
 void setup() {
 	console.log("snake setup started");
@@ -43,7 +40,7 @@ void setup() {
 	gameHeight = 400;
 	counter = 0;
 	score = 0;
-	particles = [];
+	initParticles();
 	gameStage = 0;
 	gridWidth = 30;
 	gridHeight = 30;
@@ -245,12 +242,6 @@ var mover = {
 				dir = nextDirection;
 			moveSnake();
 		}
-		for (var i = particles.length - 1; i >= 0; i--) {
-			particles[i].move();
-			if (particles[i].isDead()) {
-				particles.splice(i, 1);
-			}
-		}
 	},
 	"2": function() {
 	
@@ -280,9 +271,7 @@ var drawer = {
 		rect(food.x * gridWidthpx, food.y * gridHeightpx, gridWidthpx, gridHeightpx);
 		drawScore();
 		//draw particles
-		for (var i = 0; i < particles.length; i++) {
-			particles[i].draw();
-		}
+		drawParticles();
 	},
 	"2": function() {
 		

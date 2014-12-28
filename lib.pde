@@ -3,6 +3,23 @@
 var gameWidth;
 var gameHeight;
 
+// This is an array to keep track of the particles
+var particles;
+
+// Draws the particle systems from the particles array and removes "dead" particle systems
+function drawParticles() {
+	for (var i = particles.length - 1; i > 0; i--) {
+		particles[i].move();
+		if (particles[i].isDead()) {
+			particles.splice(i, 1);
+		} else {
+			particles[i].draw();
+		}
+	}
+}
+function initParticles() {
+	particles = [];
+}
 // Particle system object containing subparticles
 function Particle(x, y, c, numParticles) {
 	this.x = x;

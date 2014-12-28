@@ -16,9 +16,6 @@ var bricks;
 // Controls the stage of the game (beginning, end, etc)
 var gameStage;
 
-// Particle system array
-var particles;
-
 void setup() {
 	gameWidth = 400;
 	gameHeight = 400;
@@ -26,7 +23,7 @@ void setup() {
 	counter = 0;
 	paddle = new Paddle();
 	bricks = [];
-	particles = [];
+	initParticles();
 	var numCols = 10;
 	var numRows = 3;
 	for (var r = 0; r < numRows; r++) {
@@ -82,12 +79,6 @@ var mover = {
 				ball.collision(bricks[i]);
 			}
 		}
-		for (var i = particles.length - 1; i >= 0; i--) {
-			particles[i].move();
-			if (particles[i].isDead()) {
-				particles.splice(i, 1);
-			}
-		}
 		paddle.move();
 		ball.move();
 	},
@@ -122,9 +113,7 @@ function drawGame() {
 			bricks[i].draw();
 		}
 	}
-	for (var i = 0; i < particles.length; i++) {
-		particles[i].draw();
-	}
+	drawParticles();
 }
 
 // Draws the scoreboard that appears at the bottom
