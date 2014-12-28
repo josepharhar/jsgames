@@ -114,7 +114,7 @@ function Food(x, y) {
 		grid.setLoc(prevx, prevy, null);
 		addSnake = true;
 		score += 50;
-		particles.push(new Particle(prevx * gridWidthpx + gridWidthpx / 2, prevy * gridHeightpx + gridHeightpx / 2, color(0, 255, 0)));
+		particles.push(new Particle(prevx * gridWidthpx + gridWidthpx / 2, prevy * gridHeightpx + gridHeightpx / 2, color(0, 255, 0), 15));
 	}
 }
 

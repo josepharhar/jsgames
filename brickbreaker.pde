@@ -253,7 +253,7 @@ function Ball() {
 			//ball went off screen down
 			lives -= 1;
 			for (var i = 0; i < 5; i++) {
-				particles.push(new Particle(this.x, this.y, color(255, 0, 0)));
+				particles.push(new Particle(this.x, this.y, color(255, 0, 0), 15));
 			}
 			if (lives <= 0) {
 				gameOver();
@@ -306,7 +306,7 @@ function Brick(x, y, c) {
 	}
 	this.die = function() {
 		this.isDead = true;
-		particles.push(new Particle(this.x, this.y, this.c));
+		particles.push(new Particle(this.x, this.y, this.c, 15));
 	}
 	this.bounce = function(inBall) {
 		this.die();
